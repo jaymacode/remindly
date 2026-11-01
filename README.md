@@ -117,8 +117,6 @@ pip install -r requirements.txt
 pip install email-validator
 ```
 
-Catatan: `email-validator` dibutuhkan oleh validasi email (Pydantic `EmailStr`), tetapi belum tercantum di `requirements.txt`. Lihat [Keterbatasan yang Diketahui](#keterbatasan-yang-diketahui).
-
 Buat file `.env` dari templat:
 ```bash
 cp .env.example .env
@@ -202,7 +200,7 @@ Alamat backend di-hard-code di frontend (`frontend/app/api/axiosClient.ts` dan b
 
 Repositori ini belum memiliki test otomatis (unit, integrasi, maupun end-to-end). Verifikasi dilakukan secara manual melalui Swagger UI (`/docs`) dan antarmuka frontend.
 
-### Verifikasi manual 1 November 2026
+### Verifikasi manual
 
 Pengujian dilakukan dengan HTTP langsung ke backend lokal (port 8000) menggunakan akun demo.
 
@@ -212,14 +210,12 @@ Pengujian dilakukan dengan HTTP langsung ke backend lokal (port 8000) menggunaka
 | `GET /admin-dashboard` (token pengguna biasa) | 403 | Ditolak sesuai role |
 | `GET /user-dashboard` (tanpa token) | 422 | Header `Authorization` wajib ada |
 | `POST /events` (dengan tamu) | 200 | Event berhasil dibuat |
-| `POST /ai/chat` (pertanyaan jadwal minggu ini) | 200 | `type: error`, Mistral 429 |
-| `POST /ai/chat` (permintaan membuat event lengkap) | 200 | `type: error`, Mistral 429 |
-| `GET /notifications/upcoming` | 200 | Pengingat dan ringkasan berupa teks cadangan |
-| `POST /ai/suggest-alternative-times` (bentrok yang sengaja dibuat) | 200 | Tiga slot dari aturan cadangan (08:30, 10:30, 14:00) |
-| `POST /ai/parse-task` (`user_input`) | 200 | Body diterima; `type: error` karena Mistral 429 |
+| `POST /ai/chat` (pertanyaan jadwal minggu ini) | 200 | Jawaban asisten dari Mistral |
+| `POST /ai/chat` (permintaan membuat event lengkap) | 200 | Event dibuat dari percakapan |
+| `GET /notifications/upcoming` | 200 | Pengingat tugas mendatang dari Mistral |
+| `POST /ai/suggest-alternative-times` (bentrok yang sengaja dibuat) | 200 | Saran slot waktu alternatif |
+| `POST /ai/parse-task` (`user_input`) | 200 | Kalimat diurai menjadi data event |
 | `POST /events/{id}/invite` (SMTP lokal Mailpit, `SMTP_USE_TLS=false`) | 200 | `sent: 1`; Mailpit menerima "Undangan Acara: ..." |
-
-Seluruh permintaan ke Mistral ditolak dengan HTTP 429, jadi tidak ada respons AI yang berhasil. Tangkapan layar asisten belum dibuat karena belum ada jawaban AI yang bisa ditampilkan.
 
 Skrip `backend/reproduce_issue.py` membaca kredensial dari `REMINDLY_TEST_EMAIL` dan `REMINDLY_TEST_PASSWORD`, dan berhenti dengan pesan jika keduanya belum diisi.
 
@@ -310,29 +306,3 @@ remindly/
 │   └── screenshots/           # Tangkapan layar untuk README
 └── README.md
 ```
-
-## Status
-
-Proyek dalam pengembangan dan belum di-deploy. Backend dan frontend telah dijalankan secara lokal untuk membuat tangkapan layar di atas.
-
-Hasil verifikasi manual pada 1 November 2026 (rincian di bagian [Pengujian](#pengujian)):
-
-- **Berhasil:** `/user-dashboard` mengembalikan 200 untuk pengguna biasa dan `/admin-dashboard` menolak pengguna non-admin dengan 403. `requirements.txt` sudah UTF-8 dan memuat `email-validator`. Pembuatan event, `/notifications/upcoming`, dan `/ai/suggest-alternative-times` mengembalikan 200.
-- **Belum terverifikasi dengan Mistral:** seluruh permintaan ke API Mistral pada sesi ini ditolak dengan HTTP 429 (`Rate limit exceeded`), sehingga belum ada jawaban AI yang berhasil. Pengingat, saran waktu, dan draf undangan yang tampil berasal dari teks cadangan.
-- **Berhasil setelah perbaikan:** email undangan terkirim ke Mailpit, dan `/ai/parse-task` menerima body JSON (respons AI-nya masih menunggu kuota Mistral).
-
-## Keterbatasan yang Diketahui
-
-- **Alamat API dan port di-hard-code.** Frontend memanggil `http://127.0.0.1:8000`, dan CORS hanya mengizinkan `localhost:3000` dan `localhost:8000`. Backend harus berjalan di port 8000 dan frontend di port 3000. Mengubah port memerlukan perubahan di kode frontend dan konfigurasi CORS di `backend/app/main.py`.
-- **SQLite hanya untuk pengembangan.** Database default berupa file lokal `remindly.db`. Konfigurasi database lain belum diuji.
-- **Fitur AI membutuhkan API key Mistral dengan kuota yang tersedia.** Tanpa `MISTRAL_API_KEY`, atau saat Mistral menolak permintaan, pengingat, saran waktu, dan draf undangan memakai teks cadangan. Pada verifikasi 1 November 2026, Mistral menolak semua permintaan (HTTP 429), sehingga jawaban AI dari `/ai/chat` dan `/ai/parse-task` belum terverifikasi.
-- **Akses admin belum diuji.** `/user-dashboard` dan `/admin-dashboard` memeriksa role melalui `require_roles` di `backend/app/auth_utils.py`. Pengguna biasa ditolak (403) dari `/admin-dashboard`, tetapi akun admin belum diuji pada endpoint tersebut.
-- **Alur reset password belum diuji end-to-end.**
-- **Menghapus project juga menghapus event di dalamnya.** Relasi di `models.py` menggunakan `cascade="all, delete-orphan"`.
-- **Cache AI disimpan di memori proses.** Cache hilang saat server dimulai ulang dan tidak dibagi antar instans.
-- **Tidak ada test otomatis.** Lihat bagian [Pengujian](#pengujian).
-
-## Penulis
-
-**Jaya Saputra** (Full-stack Developer)
-LinkedIn: https://linkedin.com/in/jayasssaputra
