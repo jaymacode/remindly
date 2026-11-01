@@ -1,0 +1,59 @@
+# Environment files (secrets) - anywhere in the tree
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Databases and uploads
+*.db
+*.sqlite
+*.sqlite3
+backend/uploads/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+next-env.d.ts
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Tooling caches and local tool state
+.impeccable/
+.playwright-mcp/
+.vercel
+*.pem
+
+# Logs
+*.log
+logs/
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Agent docs and CI (kept local only)
+docs/
+.github/
+AGENTS.md
+CLAUDE.md
+START_HERE.md
+PRODUCT.md
+DESIGN.md
